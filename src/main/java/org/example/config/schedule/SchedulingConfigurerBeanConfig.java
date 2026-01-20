@@ -33,7 +33,6 @@ public class SchedulingConfigurerBeanConfig implements SchedulingConfigurer {
         }
     }
 
-    //TODO переделать период на Duration
     private Trigger schedulingTrigger(final CommonSchedulingTask task) {
         final PeriodicTrigger periodicTrigger = new PeriodicTrigger(task.getPeriod());
         periodicTrigger.setInitialDelay((task.getInitialDelay()));

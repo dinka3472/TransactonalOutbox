@@ -15,7 +15,7 @@ public class ThreadPoolTaskSchedulerConfig {
         int poolSize = Math.max(1, calculatePoolSize(schedulingTasks));
         ThreadPoolTaskScheduler ts = new ThreadPoolTaskScheduler();
         ts.setPoolSize(poolSize);
-        ts.setThreadNamePrefix("sched-");
+        ts.setThreadNamePrefix("schedule-thread-");
 
         ts.setWaitForTasksToCompleteOnShutdown(true);
         ts.setAwaitTerminationSeconds(30);
@@ -31,6 +31,6 @@ public class ThreadPoolTaskSchedulerConfig {
             int threadCount = task.getThreadCount();
             sum += threadCount;
         }
-        return Math.min(sum, 128);
+        return Math.min(sum, 128); //TODO хз чо за цифру я добавила
     }
 }

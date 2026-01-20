@@ -1,8 +1,10 @@
 spring:
+  application:
+    name: order-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/outboxdb
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://localhost:${POSTGRES_PORT}/outboxdb
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
   liquibase:
     change-log: db.changelog/changelog.xml
   jpa:
@@ -13,7 +15,20 @@ spring:
         format_sql: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:${KAFKA_1_EXPOSED_PORT},localhost:${KAFKA_2_EXPOSED_PORT},localhost:${KAFKA_3_EXPOSED_PORT}
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        session.timeout.ms: 30000
+        max.poll.interval.ms: 300000
+        max.poll.records: 200
+      bootstrap-servers: localhost:${KAFKA_1_EXPOSED_PORT},localhost:${KAFKA_2_EXPOSED_PORT},localhost:${KAFKA_3_EXPOSED_PORT}
+#      isolation-level: read_committed
+    topics:
+      order-listener: orders.create
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -21,25 +36,45 @@ spring:
       retries: 3
       properties:
         linger.ms: 5
-      bootstrap-servers: localhost:9092
+        enable.idempotence: true           # Включает идемпотентность
+        acks: all                          # Гарантирует запись во все реплики
+        retries: 2147483647                # Максимальное число ретраев
+        max.in.flight.requests.per.connection: 1  # Для сохранения порядка
+        delivery.timeout.ms: 120000        # Таймаут доставки
+      bootstrap-servers: localhost:${KAFKA_1_EXPOSED_PORT},localhost:${KAFKA_2_EXPOSED_PORT},localhost:${KAFKA_3_EXPOSED_PORT}
+      transaction-id-prefix: ${random.uuid}-outbox-tx-
+    admin:
+      auto-create: true
 
   task:
     scheduling:
       pool:
         size: 5
 
+scheduler:
+  send-order-executor:
+    period: 1000
+    fix-rate: true
+    thread-count: 3
+
+outbox:
+  defaults:
+    batch-size: 100
+    lock-timeout: 30s
+    empty-timeout: 5s
+
+  send-order:
+    topic: orders.events
+    partitions: 5
+    batch-size: 50
+
 logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %-36logger{36} - %msg%n"
   level:
     root: info
     org.hibernate.SQL: info
 server:
-  port: 8089
-outbox:
-  enabled: true
-  batch-size: 100
-  lock-timeout: 30s
-  empty-timeout: 5s
-  partitions: 5
-  topics:
-    - orders.events
+  port: 0
+
 

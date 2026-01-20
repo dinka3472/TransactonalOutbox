@@ -32,7 +32,7 @@ public class CommonBackOff {
     public void sleep(final int processed) {
         if (processed == 0) {
             long nextBackOff = nextBackOff();
-            log.info("Sleeping for {} milliseconds, thread: {}", nextBackOff, Thread.currentThread().getName());
+            log.debug("Sleeping for {} milliseconds, thread: {}", nextBackOff, Thread.currentThread().getName());
             Thread.sleep(nextBackOff);
         } else {
             reset();

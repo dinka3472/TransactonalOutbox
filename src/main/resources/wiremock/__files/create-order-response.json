@@ -1,6 +1,0 @@
-{
-  "status": "OK",
-  "clientId": {{jsonPath request.body '$.clientId'}},
-"orderId": "{{jsonPath request.body '$.orderId'}}",
-"amount": {{jsonPath request.body '$.amount'}}
-}

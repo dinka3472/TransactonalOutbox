@@ -1,68 +1,108 @@
-﻿services:
+﻿x-common: &kafka-image
+  image: bitnamilegacy/kafka:3.3.2
+
+services:
   postgres:
     image: postgres:latest
     ports:
-      - 5432:5432
+      - "${POSTGRES_PORT}:5432"
     environment:
       POSTGRES_DB: outboxdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    command: ["postgres", "-c", "log_statement=all"]
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-  
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+      - postgres_data:/var/lib/postgresql
+  kafka-1:
+    <<: *kafka-image
+    restart: always
+    ports:
+      - "${KAFKA_1_EXPOSED_PORT}:9092"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+      # Unique Node Id
+      - KAFKA_CFG_NODE_ID=1
+      # Cluster Id
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
+      # Node roles. Controller manages cluster state. Broker stores partitions data and communicates with clients
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      # Controller quorum selects leader controller. Other controllers are leader's replicas
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091, 2@kafka-2:9091, 3@kafka-3:9091
+      # Internal listeners are used for inner broker-broker, clients-broker communications.
+      # Controller listener is used for controller-controller and controller-broker communications.
+      # External listener is used for external client-broker communications
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9090, CONTROLLER://:9091, EXTERNAL://:9092
+      # Advertised listeners are used for client-broker communications.
+      # Client connects to bootstrap server (one of the brokers) and gets cluster metadata including advertised listeners (internal or external)
+      # Client selects one of advertised listeners to connect to depending on which partition in needs
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-1:9090, EXTERNAL://${HOSTNAME:-localhost}:${KAFKA_1_EXPOSED_PORT}
+      # Security protocol map defines which security protocol to use for each listener
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT, INTERNAL:PLAINTEXT
+      # Listener name for controller communication
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      # Listener name for broker communication
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
     volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_log:/var/lib/zookeeper/log
-    
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "29092:29092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Define listeners for internal and external access
-      KAFKA_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-  wiremock:
-    image: wiremock/wiremock:3.3.1
-    container_name: wiremock
-    ports:
-      - "8088:8080"
-    volumes:
-      - ./src/main/resources/wiremock:/home/wiremock:ro
-    command:
-      - "--global-response-templating"
+      - kafka-1:/bitnami/kafka
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka-1:9090" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    depends_on:
-      - kafka
+  kafka-2:
+    <<: *kafka-image
+    restart: always
     ports:
-      - "8080:8080"
+      - "${KAFKA_2_EXPOSED_PORT}:9094"
     environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091, 2@kafka-2:9091, 3@kafka-3:9091
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9090, CONTROLLER://:9091, EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-2:9090, EXTERNAL://${HOSTNAME:-localhost}:${KAFKA_2_EXPOSED_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT, INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    volumes:
+      - kafka-2:/bitnami/kafka
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka-2:9090" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+
+  kafka-3:
+    <<: *kafka-image
+    restart: always
+    ports:
+      - "${KAFKA_3_EXPOSED_PORT}:9096"
+    environment:
+      - KAFKA_CFG_NODE_ID=3
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091, 2@kafka-2:9091, 3@kafka-3:9091
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9090, CONTROLLER://:9091, EXTERNAL://:9096
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-3:9090, EXTERNAL://${HOSTNAME:-localhost}:${KAFKA_3_EXPOSED_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT, EXTERNAL:PLAINTEXT, INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    volumes:
+      - kafka-3:/bitnami/kafka
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka-3:9090" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
 volumes:
   postgres_data:
-  kafka_data:
-  WireMock:
-  zookeeper_data:
-  zookeeper_log:
+  kafka-1:
+    driver: local
+  kafka-2:
+    driver: local
+  kafka-3:
+    driver: local
