@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Создание таблицы outbox_offsets -->
+    <changeSet id="1-create-outbox-offsets" author="dinara">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="outbox_offsets"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="outbox_offsets">
+            <column name="id" type="int8" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_outbox_offsets"/>
+            </column>
+            <column name="last_processed_id" type="int8">
+                <constraints nullable="false"/>
+            </column>
+            <column name="available_after" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_processed_transaction_id" type="xid8">
+                <constraints nullable="false"/>
+            </column>
+            <column name="partition" type="int4">
+                <constraints nullable="false"/>
+            </column>
+            <column name="topic" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="outbox_offsets" indexName="ix_outbox_offsets_topic_partition" unique="true">
+            <column name="topic"/>
+            <column name="partition"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Создание таблицы outbox_messages -->
+    <changeSet id="2-create-outbox-messages" author="dinara">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="outbox_messages"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="outbox_messages">
+            <column name="id" type="int8" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_outbox_messages"/>
+            </column>
+            <column name="topic" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="varchar(128)"/>
+            <column name="type" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="headers" type="jsonb">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="partition" type="int4" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transaction_id" type="xid8" defaultValueComputed="pg_current_xact_id()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="outbox_messages" indexName="ix_outbox_messages_topic_partition_transaction_id_id">
+            <column name="topic"/>
+            <column name="partition"/>
+            <column name="transaction_id"/>
+            <column name="id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

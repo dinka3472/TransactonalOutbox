@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "/api/orders",
+    "headers": {
+      "Content-Type": {
+        "contains": "application/json"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": "{ \"status\": \"OK\", \"clientId\": \"{{jsonPath request.body '$.clientId'}}\", \"orderId\": \"{{jsonPath request.body '$.orderId'}}\", \"amount\": \"{{jsonPath request.body '$.amount'}}\" }",
+    "transformers": ["response-template"]
+  }
+}
+

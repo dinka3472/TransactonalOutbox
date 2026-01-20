@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/outboxdb
+    username: postgres
+    password: postgres
+  liquibase:
+    change-log: db.changelog/changelog.xml
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        linger.ms: 5
+      bootstrap-servers: localhost:9092
+
+  task:
+    scheduling:
+      pool:
+        size: 5
+
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: debug
+server:
+  port: 8089
+outbox:
+  enabled: true
+  batch-size: 100
+  lock-timeout: 30s
+  empty-timeout: 5s
+  partitions: 5
+  topics:
+    - orders.events
+

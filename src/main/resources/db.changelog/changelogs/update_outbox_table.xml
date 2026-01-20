@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Создание таблицы outbox_messages -->
+    <changeSet id="2-update-outbox-messages" author="dinara">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="outbox_messages"/>
+        </preConditions>
+        <addDefaultValue tableName="outbox_messages" columnName="transaction_id" defaultValueComputed="pg_current_xact_id()"/>
+
+    </changeSet>
+    <changeSet id="drop_not_nul_constraint_on_headers_column" author="Dinara">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="outbox_messages"/>
+        </preConditions>
+        <dropNotNullConstraint tableName="outbox_messages" columnName="headers"/>
+    </changeSet>
+
+</databaseChangeLog>
