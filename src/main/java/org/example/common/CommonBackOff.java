@@ -1,11 +1,13 @@
 package org.example.common;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.backoff.BackOffExecution;
 import org.springframework.util.backoff.ExponentialBackOff;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 public class CommonBackOff {
     private static final int INITIAL_INTERVAL = 1000;
     private static final double MULTIPLIER = 1.5;
@@ -29,7 +31,9 @@ public class CommonBackOff {
     @SneakyThrows
     public void sleep(final int processed) {
         if (processed == 0) {
-            Thread.sleep(nextBackOff());
+            long nextBackOff = nextBackOff();
+            log.info("Sleeping for {} milliseconds, thread: {}", nextBackOff, Thread.currentThread().getName());
+            Thread.sleep(nextBackOff);
         } else {
             reset();
         }
