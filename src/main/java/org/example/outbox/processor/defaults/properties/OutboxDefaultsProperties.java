@@ -1,7 +1,8 @@
-package org.example.processor.defaults.properties;
+package org.example.outbox.processor.defaults.properties;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.example.usecasses.constants.OutboxErrorStrategyType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -16,4 +17,6 @@ public class OutboxDefaultsProperties {
 
     private Duration lockTimeout = Duration.ofSeconds(30);
     private Duration emptyTimeout = Duration.ofSeconds(5);
+    private int virtualPartitions = 50;
+    private OutboxErrorStrategyType errorStrategy = OutboxErrorStrategyType.STRICT;
 }

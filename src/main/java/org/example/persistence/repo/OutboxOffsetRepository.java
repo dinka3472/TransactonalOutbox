@@ -36,6 +36,14 @@ public interface OutboxOffsetRepository extends JpaRepository<OutboxOffset, Long
             """, nativeQuery = true)
     Optional<OutboxOffset> lockNextOffset(@Param("nowPlusLockTimeout") OffsetDateTime nowPlusLockTimeout);
 
+
+    /**
+     * Снимает блокировку с партиции outbox и обновляет информацию о последнем обработанном сообщении для партиции.
+     *
+     * @param lastProcessedTransactionId транзакция последней успешно обработанной записи
+     * @param lastProcessedId            идентификатор последнего успешно обработанного сообщения
+     * @param id                         идентификатор записи партиции
+     */
     @Modifying
     @Transactional
     @Query(value = """
@@ -46,22 +54,22 @@ public interface OutboxOffsetRepository extends JpaRepository<OutboxOffset, Long
                         last_processed_id = :lastProcessedId
                 WHERE id = :id
             """, nativeQuery = true)
-    void updatePartition(@Param("lastProcessedTransactionId") String lastProcessedTransactionId,
-                         @Param("lastProcessedId") long lastProcessedId,
-                         @Param("id") long id);
+    void unlockPartitionAndUpdateOffset(@Param("lastProcessedTransactionId") String lastProcessedTransactionId,
+                                        @Param("lastProcessedId") long lastProcessedId,
+                                        @Param("id") long id);
 
     @Modifying
     @Query(value = """
-        INSERT INTO outbox_offsets (
-            last_processed_id,
-            last_processed_transaction_id,
-            available_after,
-            partition,
-            topic
-        )
-        VALUES (0, pg_current_xact_id(), now(), :partition, :topic)
-        ON CONFLICT (topic, partition) DO NOTHING
-        """, nativeQuery = true)
-    void insertIfNotExists(String topic, int partition);
+            INSERT INTO outbox_offsets (
+                last_processed_id,
+                last_processed_transaction_id,
+                available_after,
+                partition,
+                topic
+            )
+            VALUES (0, pg_current_xact_id(), now(), :virtualPartition, :topic)
+            ON CONFLICT (topic, partition) DO NOTHING
+            """, nativeQuery = true)
+    void insertOffsetsIfNotExists(String topic, int virtualPartition);
 
 }

@@ -1,7 +1,8 @@
-package org.example.processor.defaults.properties;
+package org.example.outbox.processor.defaults.properties;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.example.usecasses.constants.OutboxErrorStrategyType;
 
 import java.time.Duration;
 
@@ -25,14 +26,25 @@ public abstract class AbstractOutboxProcessorProperties {
     private Duration emptyTimeout;
 
     /**
-     * Количество партиций на топик
+     * Количество виртуальных партиций на топик (для параллельной обработки)
      */
-    private Integer partitions;
+    private Integer virtualPartitions;
+
+    /**
+     * Топик
+     */
     private String topic;
+
+    /**
+     * Стратегия обработки ошибок
+     */
+    private OutboxErrorStrategyType errorStrategy;
 
     public void applyDefaults(OutboxDefaultsProperties d) {
         if (batchSize == null) batchSize = d.getBatchSize();
         if (lockTimeout == null) lockTimeout = d.getLockTimeout();
         if (emptyTimeout == null) emptyTimeout = d.getEmptyTimeout();
+        if (virtualPartitions == null) virtualPartitions = d.getVirtualPartitions();
+        if (errorStrategy == null) errorStrategy = d.getErrorStrategy();
     }
 }

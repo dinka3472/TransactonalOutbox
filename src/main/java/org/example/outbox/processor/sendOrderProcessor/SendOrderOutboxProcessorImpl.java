@@ -1,11 +1,11 @@
-package org.example.processor.sendOrderProcessor;
+package org.example.outbox.processor.sendOrderProcessor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.kafka.KafkaSendService;
 import org.example.persistence.repo.OutboxOffsetRepository;
 import org.example.persistence.repo.OutboxRepository;
-import org.example.processor.OutboxProcessor;
+import org.example.outbox.processor.OutboxProcessor;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,7 +29,7 @@ public class SendOrderOutboxProcessorImpl implements OutboxProcessor {
                 .loadMessages(properties.getBatchSize())
                 .prepareKafkaRecords()
                 .sendToKafka()
-                .updateOffset()
-                .processedCount();
+                .unlockPartitionAndUpdateOffset()
+                .getProcessedCount();
     }
 }

@@ -7,7 +7,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.example.usecasses.dto.CreateOrderRequest;
 import org.example.usecasses.service.OrderService;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,12 +20,11 @@ public class OrdersKafkaListener {
             topics = "${spring.kafka.topics.order-listener}",
             containerFactory = "stringListenerContainerFactory"
     )
-    public void listenString(ConsumerRecord<String, String> record) {
+    public void listenString(ConsumerRecord<String, String> rec) {
         try {
-            log.info("Received order event from partition: {}, offset: {}, {}",
-                    record.partition(), record.offset(), record.value());
-
-            CreateOrderRequest request = objectMapper.readValue(record.value(), CreateOrderRequest.class);
+            log.info("Received order event from partition: {}, offset: {}, {}", rec.partition(), rec.offset(), rec.value());
+//TODO проверить на идемпотентность
+            CreateOrderRequest request = objectMapper.readValue(rec.value(), CreateOrderRequest.class);
             orderService.createOrderAndOutboxEntity(request);
             log.info("OrderId: {}. Order Created Successfully", request.orderId());
         } catch (Exception e) {

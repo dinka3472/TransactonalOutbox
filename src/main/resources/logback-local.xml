@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Базовый пакет твоего кода -->
+    <property name="APP_BASE_PACKAGE" value="${app.logging.base-package:org.example}"/>
+
+    <!-- Паттерн для остальных -->
+    <property name="STD_PATTERN"
+              value="%clr(%d{HH:mm:ss.SSS}){faint} %highlight(%-5level) %clr([%thread]){faint} %clr(%logger{40}){cyan} - %msg%n"/>
+
+    <!-- Паттерн для твоего пакета: яркий маркер + другой цвет логгера -->
+    <property name="APP_PATTERN"
+              value="%clr(%d{HH:mm:ss.SSS}){faint} %highlight(%-5level) %clr([%thread]){faint} %clr(APP){bold,magenta} %clr(%logger{40}){magenta} - %msg%n"/>
+
+    <appender name="CONSOLE_STD" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${STD_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE_APP" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${APP_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Твой пакет: только через цветной аппендер, без дубля в root -->
+    <logger name="${APP_BASE_PACKAGE}" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE_APP"/>
+    </logger>
+
+    <!-- Всё остальное -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE_STD"/>
+    </root>
+
+</configuration>

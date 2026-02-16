@@ -10,12 +10,15 @@ import java.util.List;
 @Configuration
 public class ThreadPoolTaskSchedulerConfig {
 
+    private static final String THREAD_NAME_PREFIX = "schedule-thread-";
+    private static final int MIN_POOL_SIZE = 1;
+
     @Bean
     public ThreadPoolTaskScheduler pipRequestSchedulingTaskExecutor(List<CommonSchedulingTask> schedulingTasks) {
-        int poolSize = Math.max(1, calculatePoolSize(schedulingTasks));
+        int poolSize = Math.max(MIN_POOL_SIZE, calculatePoolSize(schedulingTasks));
         ThreadPoolTaskScheduler ts = new ThreadPoolTaskScheduler();
         ts.setPoolSize(poolSize);
-        ts.setThreadNamePrefix("schedule-thread-");
+        ts.setThreadNamePrefix(THREAD_NAME_PREFIX);
 
         ts.setWaitForTasksToCompleteOnShutdown(true);
         ts.setAwaitTerminationSeconds(30);
@@ -31,6 +34,6 @@ public class ThreadPoolTaskSchedulerConfig {
             int threadCount = task.getThreadCount();
             sum += threadCount;
         }
-        return Math.min(sum, 128); //TODO хз чо за цифру я добавила
+        return Math.min(sum, 128); //TODO хз чо за цифру я добавила, чото в проперти явно надо вынести
     }
 }
