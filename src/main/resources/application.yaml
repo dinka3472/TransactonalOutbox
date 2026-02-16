@@ -59,21 +59,25 @@ scheduler:
 
 outbox:
   defaults:
+    error-strategy: STRICT
     batch-size: 100
     lock-timeout: 30s
     empty-timeout: 5s
+    virtual-partitions: 50 #нельзя менять после установки, может удалить отсюда?
 
   send-order:
     topic: orders.events
-    partitions: 5
-    batch-size: 50
+    virtual-partitions: 5  #нельзя менять после установки, может удалить отсюда?
+    batch-size: 30
 
 logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %-36logger{36} - %msg%n"
+  config: classpath:logback-local.xml
   level:
     root: info
     org.hibernate.SQL: info
+app:
+  logging:
+    base-package: org.example
 server:
   port: 0
 

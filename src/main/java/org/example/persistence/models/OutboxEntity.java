@@ -37,7 +37,7 @@ public class OutboxEntity {
     private OffsetDateTime createdAt;
 
     @Column(name = "partition", nullable = false)
-    private Integer partition = 0;
+    private Integer virtualPartition = 0;
 
     @Column(name = "transaction_id", nullable = false,
             columnDefinition = "xid8",

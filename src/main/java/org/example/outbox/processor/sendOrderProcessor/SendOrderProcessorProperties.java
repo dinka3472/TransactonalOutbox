@@ -1,8 +1,8 @@
-package org.example.processor.sendOrderProcessor;
+package org.example.outbox.processor.sendOrderProcessor;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.example.processor.defaults.properties.AbstractOutboxProcessorProperties;
+import org.example.outbox.processor.defaults.properties.AbstractOutboxProcessorProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 

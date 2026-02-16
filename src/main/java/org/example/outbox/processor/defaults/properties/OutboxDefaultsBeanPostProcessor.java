@@ -1,4 +1,4 @@
-package org.example.processor.defaults.properties;
+package org.example.outbox.processor.defaults.properties;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.BeanPostProcessor;

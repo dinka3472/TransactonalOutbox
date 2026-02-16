@@ -1,4 +1,4 @@
-package org.example.processor;
+package org.example.outbox.processor;
 
 public interface OutboxProcessor {
 

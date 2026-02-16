@@ -1,11 +1,11 @@
-package org.example.processor.sendOrderProcessor;
+package org.example.outbox.processor.sendOrderProcessor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.example.kafka.KafkaSendService;
 import org.example.persistence.models.OutboxEntity;
 import org.example.persistence.models.OutboxOffset;
-import org.example.kafka.KafkaSendService;
 import org.example.persistence.repo.OutboxOffsetRepository;
 import org.example.persistence.repo.OutboxRepository;
 
@@ -103,7 +103,6 @@ public class SendOrderProcessingContext {
                     topic, partition, messages.size(),
                     first.getId(), last.getId());
         }
-
         return this;
     }
 
@@ -121,7 +120,7 @@ public class SendOrderProcessingContext {
         this.records = messages.stream()
                 .map(outbox -> new ProducerRecord<>(
                         outbox.getTopic(),
-                        outbox.getPartition(),
+                        outbox.getVirtualPartition(),
                         System.currentTimeMillis(),
                         outbox.getKey(),
                         outbox.getPayload()
@@ -140,6 +139,7 @@ public class SendOrderProcessingContext {
      */
     public SendOrderProcessingContext sendToKafka() {
         if (records.isEmpty()) {
+            log.debug("No outbox messages to send");
             return this;
         }
         kafkaSendService.sendBatchOrThrow(records);
@@ -153,25 +153,24 @@ public class SendOrderProcessingContext {
      * Обновляет offset до последнего успешно отправленного сообщения.
      * Вызывается только после успешной отправки в Kafka.
      */
-    public SendOrderProcessingContext updateOffset() {
+    public SendOrderProcessingContext unlockPartitionAndUpdateOffset() {
         if (lockedOffset == null || messages.isEmpty()) {
             return this;
         }
 
         OutboxEntity last = messages.get(messages.size() - 1);
-        offsetRepository.updatePartition(
+        offsetRepository.unlockPartitionAndUpdateOffset(
                 last.getTransactionId(),
                 last.getId(),
                 lockedOffset.getId()
         );
-
         return this;
     }
 
     /**
      * Возвращает количество обработанных сообщений.
      */
-    public int processedCount() {
+    public int getProcessedCount() {
         return messages.size();
     }
 }
